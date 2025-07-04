@@ -9,6 +9,7 @@ class Node: #self is this current instance of Node
     def __init__(self, data):
         self.data= data
         self.next= None #not defined yet
+#btw, next point to the one below you
 
 class Stack: #self is this current instance of Stack
     def __init__(self):
@@ -27,3 +28,15 @@ class Stack: #self is this current instance of Stack
         if self.is_empty():
             return None
         return self.top.data
+
+    def push(self, data):
+        new_node = Node(data)
+        new_node.next= self.top
+        self.top=new_node
+        
+    def pop(self):
+        if self.is_empty():
+            return None
+        popped_data = self.top.data
+        self.top = self.top.next
+        return popped_data
