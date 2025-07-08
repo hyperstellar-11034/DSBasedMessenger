@@ -1,14 +1,14 @@
-import uuid #to generate unique user_id s  (?)
+import uuid
 
 class User:
     def __init__(self, name, job):
-        self.id = self.generate_unique_id()  # Always generated internally
+        self.id = self.generate_unique_id()
         self.name = name
         self.job = job
 
-    @staticmethod #???
+    @staticmethod
     def generate_unique_id():
-        # Generate a unique int ID by converting part of a UUID4 string to int
+        # Generate a unique int ID by converting part of UUID4
         return int(uuid.uuid4().hex[:8], 16)
 
     def update_contact(self, name, job):
@@ -18,3 +18,12 @@ class User:
         if job is not None:
             print(f"Updating job from '{self.job}' to '{job}'")
             self.job = job
+
+    def to_dict(self):
+        return {"id": self.id, "name": self.name, "job": self.job}
+
+    @staticmethod
+    def from_dict(d):
+        user = User(d["name"], d["job"])
+        user.id = d["id"]
+        return user
