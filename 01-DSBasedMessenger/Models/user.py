@@ -1,8 +1,8 @@
 import uuid #to generate unique user_id s  (?)
 
 class User:
-    def __init__(self, name, job, user_id):
-        self.id = user_id if user_id is not None else self.generate_unique_id()
+    def __init__(self, name, job):
+        self.id = self.generate_unique_id()  # Always generated internally
         self.name = name
         self.job = job
 
