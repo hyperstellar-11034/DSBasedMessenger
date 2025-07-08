@@ -9,7 +9,7 @@ class Node: #self is this current instance of Node
     def __init__(self, data):
         self.data= data
         self.next= None #not defined yet
-#btw, next point to the one below you
+#btw, next points to the one below you
 
 class Stack: #self is this current instance of Stack
     def __init__(self):
