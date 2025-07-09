@@ -66,10 +66,17 @@ def show_contacts(user):
             contact_user = storage.get_user_by_phone(contact_phone)
             display_name = contact_user.name if contact_user else "Unknown contact"
 
-            col1, col2 = st.columns([5, 1])
+            col1, col2, col3 = st.columns([4, 1, 1])
             with col1:
                 st.write(f"{display_name} ({contact_phone})")
             with col2:
+                if st.button(f"Message", key=f"message_contact_{idx}"):
+                    st.session_state['message_to'] = contact_phone
+                    st.session_state['nav_stack'].append(st.session_state.get('current_page', 'main'))
+                    st.session_state['current_page'] = 'send_message'
+                    safe_rerun()
+
+            with col3:
                 if st.button(f"Delete", key=f"delete_contact_{idx}"):
                     user.contacts.pop(idx)
                     storage.update_user(user)
@@ -106,15 +113,26 @@ def send_message_ui(user):
         if not msg_content.strip():
             st.error("Message cannot be empty.")
         else:
-            msg = Message(sender_id=user.phone_number, content=msg_content, timestamp=datetime.now(timezone.utc))
+            msg = Message(sender_id=user.phone_number, receiver_id=to_phone, content=msg_content, timestamp=datetime.now(timezone.utc))
+            
+            # Append message to sender's messages
             user.messages.append(msg)
+            
+            # Append message to receiver's messages
+            receiver = storage.get_user_by_phone(to_phone)
+            if receiver:
+                receiver.messages.append(msg)
+                storage.update_user(receiver)
+            
             storage.update_user(user)
+            
             st.success("Message sent!")
             del st.session_state['message_to']
             safe_rerun()
     if st.button("Cancel"):
         del st.session_state['message_to']
         safe_rerun()
+
 
 def show_messages(user):
     st.subheader("Your Messages")
@@ -147,17 +165,40 @@ def show_messages(user):
 
         # Reply input
         reply_text = st.text_input(f"Reply to message #{idx+1}", key=f"reply_{idx}")
-        if st.button(f"Send Reply to message #{idx+1}", key=f"send_reply_{idx}"):
-            if reply_text.strip() == "":
-                st.error("Reply cannot be empty.")
-            else:
-                reply_msg = Message(sender_id=user.phone_number, content=reply_text, timestamp=datetime.now(timezone.utc), reply_to=message.timestamp.isoformat())
-                if not hasattr(message, "replies"):
-                    message.replies = []
-                message.replies.append(reply_msg)
-                storage.update_user(user)
-                st.success("Reply sent!")
-                safe_rerun()
+    if st.button(f"Send Reply to message #{idx+1}", key=f"send_reply_{idx}"):
+        if reply_text.strip() == "":
+            st.error("Reply cannot be empty.")
+        else:
+            reply_msg = Message(
+                sender_id=user.phone_number,
+                receiver_id=message.sender_id if user.phone_number != message.sender_id else message.receiver_id,
+                content=reply_text,
+                timestamp=datetime.now(timezone.utc),
+                reply_to=message.timestamp.isoformat()
+            )
+            if not hasattr(message, "replies"):
+                message.replies = []
+            message.replies.append(reply_msg)
+
+            # Update sender's data
+            storage.update_user(user)
+
+            # Update receiver's data
+            receiver_phone = reply_msg.receiver_id
+            receiver = storage.get_user_by_phone(receiver_phone)
+            if receiver:
+                # Find the original message in receiver's messages and append reply
+                for m in receiver.messages:
+                    if m.timestamp == message.timestamp:
+                        if not hasattr(m, "replies"):
+                            m.replies = []
+                        m.replies.append(reply_msg)
+                        break
+                storage.update_user(receiver)
+
+            st.success("Reply sent!")
+            safe_rerun()
+
 
 def developer_mode():
     st.header("Developer Mode")
@@ -206,11 +247,9 @@ def main():
                 st.session_state['current_page'] = previous
                 safe_rerun()
 
-        # Page navigation logic
         if st.session_state['current_page'] == 'main':
             show_contacts(user)
             if 'message_to' in st.session_state:
-                # Push current page before navigating
                 st.session_state['nav_stack'].append('main')
                 st.session_state['current_page'] = 'send_message'
                 safe_rerun()
