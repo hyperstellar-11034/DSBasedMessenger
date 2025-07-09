@@ -1,29 +1,45 @@
 import uuid
 
 class User:
-    def __init__(self, name, job):
-        self.id = self.generate_unique_id()
+    def __init__(self, phone_number, name):
+        if not self._validate_phone_number(phone_number):
+            raise ValueError("Phone number must be exactly 11 digits")
+        self.phone_number = phone_number
         self.name = name
-        self.job = job
+        self.key = self._hash_phone_number(phone_number)  # integer key for hash table
+        self.contacts = []  
+        self.messages = []  
 
     @staticmethod
-    def generate_unique_id():
-        # Generate a unique int ID by converting part of UUID4
-        return int(uuid.uuid4().hex[:8], 16)
+    def _validate_phone_number(phone_number):
+        return isinstance(phone_number, str) and phone_number.isdigit() and len(phone_number) == 11
 
-    def update_contact(self, name, job):
+    @staticmethod
+    def _hash_phone_number(phone_number):
+        # Simple hash function: sum of digits mod 17 
+        return sum(int(d) for d in phone_number) % 17
+
+    def update_contact(self, name=None):
         if name is not None:
             print(f"Updating name from '{self.name}' to '{name}'")
             self.name = name
-        if job is not None:
-            print(f"Updating job from '{self.job}' to '{job}'")
-            self.job = job
+
+    def add_contact(self, contact_phone_number):
+        # Add contact only if not already in contacts
+        if contact_phone_number not in self.contacts:
+            self.contacts.append(contact_phone_number)
 
     def to_dict(self):
-        return {"id": self.id, "name": self.name, "job": self.job}
+        return {
+            "key": self.key,
+            "phone_number": self.phone_number,
+            "name": self.name,
+            "contacts": self.contacts,
+        }
 
     @staticmethod
     def from_dict(d):
-        user = User(d["name"], d["job"])
-        user.id = d["id"]
+        user = User(d["phone_number"], d["name"])
+        user.key = d["key"]
+        user.contacts = d.get("contacts", [])
         return user
