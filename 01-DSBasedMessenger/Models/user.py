@@ -1,4 +1,5 @@
 import uuid
+from Models.message import Message 
 
 class User:
     def __init__(self, phone_number, name):
@@ -7,8 +8,9 @@ class User:
         self.phone_number = phone_number
         self.name = name
         self.key = self._hash_phone_number(phone_number)  # integer key for hash table
-        self.contacts = []  
-        self.messages = []  
+        self.contacts = []  # List of phone numbers (strings)
+        # Initialize messages as an empty list to store Message objects
+        self.messages = []
 
     @staticmethod
     def _validate_phone_number(phone_number):
@@ -16,7 +18,7 @@ class User:
 
     @staticmethod
     def _hash_phone_number(phone_number):
-        # Simple hash function: sum of digits mod 17 
+        # Simple hash function: sum of digits mod 17
         return sum(int(d) for d in phone_number) % 17
 
     def update_contact(self, name=None):
@@ -35,11 +37,15 @@ class User:
             "phone_number": self.phone_number,
             "name": self.name,
             "contacts": self.contacts,
+            "messages": [m.to_dict() for m in self.messages]
         }
 
     @staticmethod
     def from_dict(d):
         user = User(d["phone_number"], d["name"])
-        user.key = d["key"]
+        user.key = d.get("key", User._hash_phone_number(user.phone_number))
         user.contacts = d.get("contacts", [])
+        messages_data = d.get("messages", [])
+        # Deserialize message dictionaries back to Message objects
+        user.messages = [Message.from_dict(m) for m in messages_data]
         return user
