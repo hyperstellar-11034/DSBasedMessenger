@@ -6,6 +6,7 @@ from datetime import datetime, timezone, date
 from Models.user import User
 from Models.message import Message
 from Storage.storage_handler import StorageHandler
+from DataStructures.stack import Stack
 
 storage = StorageHandler()
 
@@ -133,7 +134,6 @@ def send_message_ui(user):
         del st.session_state['message_to']
         safe_rerun()
 
-
 def show_messages(user):
     st.subheader("Your Messages")
 
@@ -147,11 +147,20 @@ def show_messages(user):
         st.write("No messages found for the selected date.")
         return
 
+    # Sort by timestamp ascending (oldest to newest)
     filtered_messages.sort(key=lambda m: m.timestamp)
 
-    for idx, message in enumerate(filtered_messages):
+    # Using my own Stack Class to reverse the order (newest to olderst)
+    msg_stack = Stack()
+    for msg in filtered_messages:
+        msg_stack.push(msg)
+
+    idx = 0
+    while not msg_stack.is_empty():
+        message = msg_stack.pop()
+        idx += 1
         timestamp_str = message.timestamp.strftime("%Y-%m-%d %H:%M:%S UTC")
-        st.markdown(f"**Message #{idx+1}**")
+        st.markdown(f"**Message #{idx}**")
         st.write(f"From: {message.sender_id}")
         st.write(f"Time: {timestamp_str}")
         st.write(f"Content: {message.content}")
