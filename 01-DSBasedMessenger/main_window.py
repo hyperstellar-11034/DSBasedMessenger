@@ -167,11 +167,13 @@ def show_messages(user):
         st.write(f"Content: {message.content}")
 
         # Show replies if any
-        if hasattr(message, "replies") and message.replies:
-            st.markdown("**Replies:**")
-            for r_idx, reply in enumerate(message.replies):
-                r_time = reply.timestamp.strftime("%Y-%m-%d %H:%M:%S UTC")
-                st.write(f"- [{r_time}] User {reply.sender_id}: {reply.content}")
+        if hasattr(message, "replies"):
+            replies_list = message.replies.get_all_replies()
+            if replies_list:
+                st.markdown("**Replies:**")
+                for r_idx, reply in enumerate(replies_list):
+                    r_time = reply.timestamp.strftime("%Y-%m-%d %H:%M:%S UTC")
+                    st.write(f"- [{r_time}] User {reply.sender_id}: {reply.content}")
 
         # Reply input
         reply_text = st.text_input(f"Reply to message #{idx+1}", key=f"reply_{idx}")
@@ -186,9 +188,8 @@ def show_messages(user):
                 timestamp=datetime.now(timezone.utc),
                 reply_to=message.timestamp.isoformat()
             )
-            if not hasattr(message, "replies"):
-                message.replies = []
-            message.replies.append(reply_msg)
+            message.replies.add_reply(reply_msg)
+
 
             # Update sender's data
             storage.update_user(user)
@@ -200,9 +201,7 @@ def show_messages(user):
                 # Find the original message in receiver's messages and append reply
                 for m in receiver.messages:
                     if m.timestamp == message.timestamp:
-                        if not hasattr(m, "replies"):
-                            m.replies = []
-                        m.replies.append(reply_msg)
+                        m.replies.add_reply(reply_msg)
                         break
                 storage.update_user(receiver)
 
