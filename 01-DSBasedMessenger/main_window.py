@@ -130,9 +130,10 @@ def send_message_ui(user):
             st.success("Message sent!")
             del st.session_state['message_to']
             safe_rerun()
+            '''
     if st.button("Cancel"):
         del st.session_state['message_to']
-        safe_rerun()
+        safe_rerun() '''
 
 def show_messages(user):
     st.subheader("Your Messages")
