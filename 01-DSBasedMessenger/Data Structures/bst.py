@@ -62,6 +62,7 @@ class BST:
         return node
 
     def _find_inorder_successor(self, node):
+    # The in-order successor: the smallest node in the right subtree
         current = node
         while current.left is not None:
             current = current.left
