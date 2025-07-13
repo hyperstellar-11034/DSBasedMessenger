@@ -7,8 +7,7 @@ class User:
         self.phone_number = phone_number
         self.name = name
         self.key = self._hash_phone_number(phone_number)  # integer key for hash table
-        self.contacts = []  # List of phone numbers (strings)
-        # Initialize messages as an empty list to store Message objects
+        self.contacts = []  
         self.messages = []
 
     @staticmethod
