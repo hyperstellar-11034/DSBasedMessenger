@@ -1,4 +1,3 @@
-import uuid
 from Models.message import Message 
 
 class User:
