@@ -1,12 +1,12 @@
-import json
-import os
+import json #is used to read/write JSON files
+import os #is used to check if the storage file exists
 from Models.user import User
 from DataStructures.hashtable import HashTable
 
 class StorageHandler:
     def __init__(self, storage_file='users_data.json'):
         self.storage_file = storage_file
-        self.users_table = HashTable()  
+        self.users_table = HashTable()  #creates a hash table 
         self.load_users()
 
     def load_users(self):
