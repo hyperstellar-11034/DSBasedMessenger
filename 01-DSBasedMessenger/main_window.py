@@ -1,12 +1,14 @@
 # streamlit run main_window.py
 
 import streamlit as st
-from datetime import datetime, timezone, date
+from datetime import datetime, timezone
 
 from Models.user import User
 from Models.message import Message
 from Storage.storage_handler import StorageHandler
 from DataStructures.stack import Stack
+from DataStructures.bst import BST
+
 
 storage = StorageHandler()
 
@@ -135,6 +137,10 @@ def send_message_ui(user):
         del st.session_state['message_to']
         safe_rerun() '''
 
+from DataStructures.bst import BST
+from DataStructures.stack import Stack
+from datetime import datetime, timezone
+
 def show_messages(user):
     st.subheader("Your Messages")
 
@@ -148,14 +154,30 @@ def show_messages(user):
         st.write("No messages found for the selected date.")
         return
 
-    # Sort by timestamp ascending (oldest to newest)
-    filtered_messages.sort(key=lambda m: m.timestamp)
-
-    # Using my own Stack Class to reverse the order (newest to olderst)
-    msg_stack = Stack()
+    # Step 1: Build BST
+    bst = BST()
     for msg in filtered_messages:
+        unix_ts = int(msg.timestamp.timestamp())  # convert datetime to UNIX int
+        bst.root = bst.insert(bst.root, unix_ts, msg)
+
+    # Step 2: Do in-order traversal to get oldest → newest
+    in_order_messages = []
+
+    def inorder(node):
+        if node is None:
+            return
+        inorder(node.left)
+        in_order_messages.append(node.message_text)
+        inorder(node.right)
+
+    inorder(bst.root)
+
+    # Step 3: Push all messages into Stack to reverse order (newest → oldest)
+    msg_stack = Stack()
+    for msg in in_order_messages:
         msg_stack.push(msg)
 
+    # Step 4: Pop and show messages
     idx = 0
     while not msg_stack.is_empty():
         message = msg_stack.pop()
@@ -166,49 +188,50 @@ def show_messages(user):
         st.write(f"Time: {timestamp_str}")
         st.write(f"Content: {message.content}")
 
-        # Show replies if any
+        # Replies
         if hasattr(message, "replies"):
             replies_list = message.replies.get_all_replies()
             if replies_list:
                 st.markdown("**Replies:**")
-                for r_idx, reply in enumerate(replies_list):
+                for reply in replies_list:
                     r_time = reply.timestamp.strftime("%Y-%m-%d %H:%M:%S UTC")
                     st.write(f"- [{r_time}] User {reply.sender_id}: {reply.content}")
 
-        # Reply input
-        reply_text = st.text_input(f"Reply to message #{idx+1}", key=f"reply_{idx}")
-    if st.button(f"Send Reply to message #{idx+1}", key=f"send_reply_{idx}"):
-        if reply_text.strip() == "":
-            st.error("Reply cannot be empty.")
-        else:
-            reply_msg = Message(
-                sender_id=user.phone_number,
-                receiver_id=message.sender_id if user.phone_number != message.sender_id else message.receiver_id,
-                content=reply_text,
-                timestamp=datetime.now(timezone.utc),
-                reply_to=message.timestamp.isoformat()
-            )
-            message.replies.add_reply(reply_msg)
+        reply_key = f"reply_{message.timestamp.isoformat()}"
+        send_key = f"send_reply_{message.timestamp.isoformat()}"
 
+        if reply_key not in st.session_state:
+            st.session_state[reply_key] = ""
 
-            # Update sender's data
-            storage.update_user(user)
+        reply_text = st.text_input(f"Reply to message #{idx}", key=reply_key)
 
-            # Update receiver's data
-            receiver_phone = reply_msg.receiver_id
-            receiver = storage.get_user_by_phone(receiver_phone)
-            if receiver:
-                # Find the original message in receiver's messages and append reply
-                for m in receiver.messages:
-                    if m.timestamp == message.timestamp:
-                        m.replies.add_reply(reply_msg)
-                        break
-                storage.update_user(receiver)
+        if st.button("Send Reply", key=send_key):
+            if reply_text.strip() == "":
+                st.error("Reply cannot be empty.")
+            else:
+                reply_msg = Message(
+                    sender_id=user.phone_number,
+                    receiver_id=message.sender_id if user.phone_number != message.sender_id else message.receiver_id,
+                    content=reply_text.strip(),
+                    timestamp=datetime.now(timezone.utc),
+                    reply_to=message.timestamp.isoformat()
+                )
 
-            st.success("Reply sent!")
-            safe_rerun()
+                message.replies.add_reply(reply_msg)
+                storage.update_user(user)
 
+                receiver = storage.get_user_by_phone(reply_msg.receiver_id)
+                if receiver:
+                    for m in receiver.messages:
+                        if m.timestamp == message.timestamp:
+                            m.replies.add_reply(reply_msg)
+                            break
+                    storage.update_user(receiver)
 
+                st.success("Reply sent!")
+                st.session_state[reply_key] = ""
+                safe_rerun()
+                
 def developer_mode():
     st.header("Developer Mode")
     password = st.text_input("Enter developer password", type="password", key="dev_password")
