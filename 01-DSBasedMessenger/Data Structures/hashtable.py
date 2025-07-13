@@ -60,6 +60,8 @@ class HashTable:
     
     def delete(self, user_id):
         chain_id = self.hash_function(user_id)
+        
+        # Calls the chain’s delete method to remove the user.
         is_deleted = self.chains_list[chain_id].delete(user_id)
         if is_deleted:
             print("Successfully Deleted")
