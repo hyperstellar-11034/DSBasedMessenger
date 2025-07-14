@@ -9,7 +9,6 @@ from Storage.storage_handler import StorageHandler
 from DataStructures.stack import Stack
 from DataStructures.bst import BST
 
-
 storage = StorageHandler()
 
 def safe_rerun():
@@ -105,7 +104,6 @@ def show_contacts(user):
                     st.success("Contact added successfully!")
                     safe_rerun()
 
-
 def send_message_ui(user):
     to_phone = st.session_state.get('message_to')
     if not to_phone:
@@ -137,10 +135,6 @@ def send_message_ui(user):
         del st.session_state['message_to']
         safe_rerun() '''
 
-from DataStructures.bst import BST
-from DataStructures.stack import Stack
-from datetime import datetime, timezone
-
 def show_messages(user):
     st.subheader("Your Messages")
 
@@ -157,7 +151,7 @@ def show_messages(user):
     # Step 1: Build BST
     bst = BST()
     for msg in filtered_messages:
-        unix_ts = int(msg.timestamp.timestamp())  # convert datetime to UNIX int
+        unix_ts = int(msg.timestamp.timestamp())  # convert datetime to UNIX timestamp
         bst.root = bst.insert(bst.root, unix_ts, msg)
 
     # Step 2: Do in-order traversal to get oldest → newest
@@ -172,7 +166,7 @@ def show_messages(user):
 
     inorder(bst.root)
 
-    # Step 3: Push all messages into Stack to reverse order (newest → oldest)
+    # Step 3: Push all messages into Stack (newest to oldest)
     msg_stack = Stack()
     for msg in in_order_messages:
         msg_stack.push(msg)
@@ -297,3 +291,15 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
+'''
+Streamlit
+
+st.title(), st.header(), st.subheader()
+st.text_input() is for single line input (phone number, name, ... )
+st.text_area() is for multi line input (message content, ... )
+st.button()
+st.write(f"Hello, {user.name}!")
+st.columns()
+
+'''
